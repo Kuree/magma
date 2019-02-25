@@ -5,6 +5,7 @@ debug_info = collections.namedtuple("debug_info", ["filename", "lineno", "module
 
 
 def get_callee_frame_info():
+    return debug_info("", 0, None)
     callee_frame = inspect.getframeinfo(inspect.currentframe().f_back.f_back)
     module = inspect.getmodule(inspect.stack()[2][0])
     return debug_info(callee_frame.filename, callee_frame.lineno, module)
