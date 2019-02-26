@@ -1,6 +1,6 @@
 import inspect
 import collections
-from logging import is_debug
+from .logging import is_debug
 
 debug_info = collections.namedtuple("debug_info", ["filename", "lineno", "module"])
 
