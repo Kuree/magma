@@ -38,6 +38,10 @@ elif level is not None:
     logging.warning(f"Unsupported value for MAGMA_LOG_LEVEL: {level}")
 
 
+def is_debug():
+    return log.level is logging.DEBUG
+
+
 __magma_include_wire_traceback = os.getenv("MAGMA_INCLUDE_WIRE_TRACEBACK", False)
 
 

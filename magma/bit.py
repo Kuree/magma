@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from .logging import error
+from .logging import error, is_debug
 from .port import Port, INPUT, OUTPUT, INOUT
 from .t import Type, Kind
 from .compatibility import IntegerTypes
@@ -27,7 +27,10 @@ class _BitType(Type):
     __hash__ = Type.__hash__
 
     def __call__(self, output):
-        return self.wire(output, get_callee_frame_info())
+        debug_info = None
+        if is_debug:
+            debug_info = get_callee_frame_info()
+        return self.wire(output, debug_info)
 
     @classmethod
     def isoriented(cls, direction):

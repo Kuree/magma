@@ -14,7 +14,7 @@ from .array import ArrayType
 from .tuple import TupleType
 from .bit import VCC, GND
 from .debug import get_callee_frame_info, debug_info
-from .logging import warning
+from .logging import warning, is_debug
 from .port import report_wiring_warning
 from .is_definition import isdefinition
 
@@ -74,10 +74,11 @@ class CircuitKind(type):
         if 'coreir_lib' not in dct:
             dct['coreir_lib'] = "global"
         if "debug_info" not in dct:
-            callee_frame = inspect.getframeinfo(inspect.currentframe().f_back.f_back)
-            module = inspect.getmodule(inspect.stack()[2][0])
-            dct["debug_info"] = debug_info(callee_frame.filename,
-                                           callee_frame.lineno, module)
+            if is_debug():
+                callee_frame = inspect.getframeinfo(inspect.currentframe().f_back.f_back)
+                module = inspect.getmodule(inspect.stack()[2][0])
+                dct["debug_info"] = debug_info(callee_frame.filename,
+                                               callee_frame.lineno, module)
 
         # create a new circuit class
         cls = type.__new__(metacls, name, bases, dct)
@@ -95,9 +96,10 @@ class CircuitKind(type):
 
     def __call__(cls, *largs, **kwargs):
         #print('CircuitKind call:', largs, kwargs)
-        debug_info = get_callee_frame_info()
         self = super(CircuitKind, cls).__call__(*largs, **kwargs)
-        self.set_debug_info(debug_info)
+        if is_debug():
+            debug_info = get_callee_frame_info()
+            self.set_debug_info(debug_info)
 
         # instance interface for this instance
         if hasattr(cls, 'IO'):
@@ -262,7 +264,9 @@ class AnonymousCircuitType(object):
         return f"{defn_str}.{self.name}"
 
     def __call__(input, *outputs, **kw):
-        debug_info = get_callee_frame_info()
+        debug_info = None
+        if is_debug():
+            debug_info = get_callee_frame_info()
 
         no = len(outputs)
         if len(outputs) == 1:
@@ -364,7 +368,9 @@ class CircuitType(AnonymousCircuitType):
 
 # DeclareCircuit Factory
 def DeclareCircuit(name, *decl, **args):
-    debug_info = get_callee_frame_info()
+    debug_info = None
+    if is_debug():
+        debug_info = get_callee_frame_info()
     dct = dict(
         IO=decl,
         debug_info=debug_info,
@@ -475,6 +481,8 @@ class DefineCircuitKind(CircuitKind):
             inst.name = f"{type(inst).name}_inst{str(cls.instanced_circuits_counter[type(inst).name])}"
             cls.instanced_circuits_counter[type(inst).name] += 1
         inst.defn = cls
+        if is_debug():
+            inst.stack = inspect.stack()
         cls.instances.append(inst)
 
 
@@ -498,7 +506,9 @@ class Circuit(CircuitType):
 
 # DefineCircuit Factory
 def DefineCircuit(name, *decl, **args):
-    debug_info = get_callee_frame_info()
+    debug_info = None
+    if is_debug():
+        debug_info = get_callee_frame_info()
     global currentDefinition
     if currentDefinition:
         currentDefinitionStack.append(currentDefinition)
@@ -522,9 +532,10 @@ def DefineCircuit(name, *decl, **args):
 
 def EndDefine():
     if currentDefinition:
-        debug_info = get_callee_frame_info()
-        currentDefinition.end_circuit_filename = debug_info[0]
-        currentDefinition.end_circuit_lineno   = debug_info[1]
+        if is_debug():
+            debug_info = get_callee_frame_info()
+            currentDefinition.end_circuit_filename = debug_info[0]
+            currentDefinition.end_circuit_lineno   = debug_info[1]
         popDefinition()
     else:
         raise Exception("EndDefine called without Define/DeclareCircuit")

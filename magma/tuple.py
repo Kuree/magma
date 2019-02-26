@@ -5,6 +5,7 @@ from .compatibility import IntegerTypes
 from .bit import BitOut, VCC, GND
 from .debug import debug_wire, get_callee_frame_info
 from .port import report_wiring_error
+from .logging import is_debug
 
 __all__  = ['TupleType', 'TupleKind', 'Tuple']
 
@@ -62,7 +63,10 @@ class TupleType(Type):
         return self.N
 
     def __call__(self, o):
-        return self.wire(o, get_callee_frame_info())
+        debug_info = None
+        if is_debug:
+            debug_info = get_callee_frame_info()
+        return self.wire(o, debug_info)
 
     @classmethod
     def isoriented(cls, direction):
